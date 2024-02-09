@@ -1,0 +1,782 @@
+openapi: 3.0.0
+info:
+  title: Systemy Wielowarstwowe Lab2 API
+  description: |-
+    _08255 Nowak Marcin 7ION_
+
+    Opis API
+    API powinno być spełniać wszystkie reguły REST (za wyjątkiem kodu na żądanie) oraz implementować HATEOAS. Będzie się ono składać się z następujących zasobów: projekty, zadania, komentarze do zadań oraz członkowie zespołu.
+    Dla uproszczenia zakładamy, że API dostępne jest tylko wewnątrz prywatnej sieci i nie wymaga uwierzytelniania ani autoryzacji użytkowników.
+
+    Funkcjonalność do zaimplementowania
+    Funkcjonalność, która powinna być udostępniona przez API została podzielona wg. zasobów w systemie.
+    - Projekty
+      - Tworzenie nowego projektu. Podczas tworzenia nowego projektu użytkownik powinien podać podstawowe dane (jak np. nazwa, opis, data rozpoczęcia czy też planowana data zakończenia). W odpowiedzi klient powinien otrzymać identyfikator nowego projektu.
+      - Pobieranie listy wszystkich projektów.
+      - Pobieranie szczegółów na temat danego projektu.
+      - Aktualizacja szczegółów danego projektu.
+      - Usuwanie konkretnego projektu.
+    - Zadania
+      - Dodawanie nowego zadania w ramach konkretnego projektu. Zadanie powinno zawierać takie informacje jak nazwa, opis, priorytet oraz szacowany termin wykonania.
+      - Listowanie zadań w ramach konkretnego projektu.
+      - Pobieranie szczegółów konkretnego zadania.
+      - Aktualizacja szczegółów konkretnego zadania.
+      - Usuwanie konkretnego zadania.
+    - Członkowie zespołu
+      - Dodawanie nowego użytkownika do zespołu projektowego.
+      - Pobieranie listy członków zespołu danego projektu.
+      - Usuwanie użytkownika z zespołu.
+    - Komentarze
+      - Możliwość dodawania nowego komentarza do konkretnego zadania.
+      - Możliwość pobierania listy komentarzy do konkretnego zadania.
+      - Usuwanie konkretnego komentarza.
+  contact:
+    email: marcin.nowak1@edu.wsti.pl
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+servers:
+- url: /
+tags:
+- name: projects
+  description: Everything about Projects
+- name: tasks
+  description: Everything about tasks
+- name: team members
+  description: Everything about Team members
+- name: comments
+  description: Comments for tasks
+paths:
+  /projects:
+    get:
+      tags:
+      - projects
+      summary: List all projects
+      description: Returns all projects
+      operationId: projects_get
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Projects'
+                x-content-type: application/json
+        "400":
+          description: Invalid input
+        "422":
+          description: Validation exception
+      x-openapi-router-controller: swagger_server.controllers.projects_controller
+    post:
+      tags:
+      - projects
+      summary: Add new project
+      description: Adds new project and returns assigned ID
+      operationId: add_project
+      requestBody:
+        description: Create new project
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Projects'
+        required: true
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: integer
+                format: int64
+                example: 10
+                x-content-type: application/json
+        "400":
+          description: Invalid input
+        "422":
+          description: Validation exception
+      x-openapi-router-controller: swagger_server.controllers.projects_controller
+  /projects/{projectID}:
+    get:
+      tags:
+      - projects
+      summary: List project
+      description: Return a single project
+      operationId: get_project_by_id
+      parameters:
+      - name: projectID
+        in: path
+        description: ID of project to return
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Projects'
+        "400":
+          description: Invalid ID supplied
+        "404":
+          description: Project not found
+      x-openapi-router-controller: swagger_server.controllers.projects_controller
+    put:
+      tags:
+      - projects
+      summary: Overwrite project with specified ID
+      description: Fully overwrite project with specified ID
+      operationId: overwrite_project_by_id
+      parameters:
+      - name: projectID
+        in: path
+        description: ID of project to update
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Projects'
+        required: true
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Projects'
+        "400":
+          description: Invalid ID supplied
+        "404":
+          description: Project not found
+      x-openapi-router-controller: swagger_server.controllers.projects_controller
+    delete:
+      tags:
+      - projects
+      summary: Delete project with specified ID
+      description: Delete a single project
+      operationId: delete_project_by_id
+      parameters:
+      - name: projectID
+        in: path
+        description: ID of project to delete
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Successful operation
+        "400":
+          description: Invalid ID supplied
+        "404":
+          description: Project not found
+      x-openapi-router-controller: swagger_server.controllers.projects_controller
+  /projects/{projectID}/tasks:
+    get:
+      tags:
+      - projects
+      - tasks
+      summary: List project tasks
+      description: Return project tasks
+      operationId: get_project_tasks
+      parameters:
+      - name: projectID
+        in: path
+        description: ID of project to return tasklist from
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tasks'
+                x-content-type: application/json
+        "400":
+          description: Invalid ID supplied
+        "404":
+          description: Project not found
+      x-openapi-router-controller: swagger_server.controllers.projects_controller
+    post:
+      tags:
+      - projects
+      - tasks
+      summary: Add new task
+      description: Adds new task and returns assigned ID
+      operationId: add_task
+      parameters:
+      - name: projectID
+        in: path
+        description: ID of project to add task to
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        description: Create new task
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tasks'
+        required: true
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: integer
+                format: int64
+                example: 10
+                x-content-type: application/json
+        "400":
+          description: Invalid input
+        "422":
+          description: Validation exception
+      x-openapi-router-controller: swagger_server.controllers.projects_controller
+  /projects/{projectID}/tasks/{taskID}:
+    get:
+      tags:
+      - projects
+      - tasks
+      summary: List task
+      description: Return a single task
+      operationId: get_task_by_id
+      parameters:
+      - name: projectID
+        in: path
+        description: ID of project to get task from
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      - name: taskID
+        in: path
+        description: ID of task to return
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tasks'
+        "400":
+          description: Invalid ID supplied
+        "404":
+          description: Project not found
+      x-openapi-router-controller: swagger_server.controllers.projects_controller
+    put:
+      tags:
+      - projects
+      - tasks
+      summary: Overwrite task with specified ID
+      description: Fully overwrite task with specified ID
+      operationId: overwrite_task_by_id
+      parameters:
+      - name: projectID
+        in: path
+        description: ID of project to overvrite task
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      - name: taskID
+        in: path
+        description: ID of task to update
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tasks'
+        required: true
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tasks'
+        "400":
+          description: Invalid ID supplied
+        "404":
+          description: Project not found
+      x-openapi-router-controller: swagger_server.controllers.projects_controller
+    delete:
+      tags:
+      - projects
+      - tasks
+      summary: Delete task with specified ID
+      description: Delete a single task
+      operationId: delete_task_by_id
+      parameters:
+      - name: projectID
+        in: path
+        description: ID of project to delete task from
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      - name: taskID
+        in: path
+        description: ID of task to delete
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Successful operation
+        "400":
+          description: Invalid ID supplied
+        "404":
+          description: Project not found
+      x-openapi-router-controller: swagger_server.controllers.projects_controller
+  /projects/{projectID}/team-members:
+    get:
+      tags:
+      - projects
+      - team members
+      summary: List project team members
+      description: Return project team members
+      operationId: get_project_team_members
+      parameters:
+      - name: projectID
+        in: path
+        description: ID of project to return team members from
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeamMembers'
+                x-content-type: application/json
+        "400":
+          description: Invalid ID supplied
+        "404":
+          description: Project not found
+      x-openapi-router-controller: swagger_server.controllers.projects_controller
+    post:
+      tags:
+      - projects
+      - team members
+      summary: Add new teammember to project
+      description: Adds new teammember and returns assigned ID
+      operationId: add_team_member_to_project
+      parameters:
+      - name: projectID
+        in: path
+        description: ID of project to add team members to
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        description: Create new teammember
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamMembers'
+        required: true
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: integer
+                format: int64
+                example: 10
+                x-content-type: application/json
+        "400":
+          description: Invalid input
+        "422":
+          description: Validation exception
+      x-openapi-router-controller: swagger_server.controllers.projects_controller
+  /projects/{projectID}/team-members/{teammemberID}:
+    delete:
+      tags:
+      - projects
+      - team members
+      summary: Delete teammember from project
+      description: Adds new teammember and returns assigned ID
+      operationId: remove_team_member_from_project
+      parameters:
+      - name: projectID
+        in: path
+        description: ID of project to remove team member from
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      - name: teammemberID
+        in: path
+        description: ID of project team member to remove
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Successful operation
+        "400":
+          description: Invalid ID supplied
+        "404":
+          description: Project not found
+      x-openapi-router-controller: swagger_server.controllers.projects_controller
+  /projects/{projectID}/tasks/{taskID}/comments:
+    get:
+      tags:
+      - projects
+      - tasks
+      - comments
+      summary: List task comments
+      description: Return task comments
+      operationId: get_task_comments
+      parameters:
+      - name: projectID
+        in: path
+        description: ID of project
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      - name: taskID
+        in: path
+        description: ID of task
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Comments'
+                x-content-type: application/json
+        "400":
+          description: Invalid ID supplied
+        "404":
+          description: Project not found
+      x-openapi-router-controller: swagger_server.controllers.projects_controller
+    post:
+      tags:
+      - projects
+      - tasks
+      - comments
+      summary: Add task comment
+      description: Adds task comment and returns created id
+      operationId: add_task_comments
+      parameters:
+      - name: projectID
+        in: path
+        description: ID of project
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      - name: taskID
+        in: path
+        description: ID of task
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tasks'
+        required: true
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: integer
+                format: int64
+                example: 10
+                x-content-type: application/json
+        "400":
+          description: Invalid ID supplied
+        "404":
+          description: Project not found
+      x-openapi-router-controller: swagger_server.controllers.projects_controller
+  /projects/{projectID}/tasks/{taskID}/comments/{commentID}:
+    delete:
+      tags:
+      - projects
+      - tasks
+      - comments
+      summary: Delete task comment
+      description: Deletes task comment
+      operationId: remove_task_comments
+      parameters:
+      - name: projectID
+        in: path
+        description: ID of project
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      - name: taskID
+        in: path
+        description: ID of task
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      - name: commentID
+        in: path
+        description: ID of comment
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Successful operation
+        "400":
+          description: Invalid ID supplied
+        "404":
+          description: Project not found
+      x-openapi-router-controller: swagger_server.controllers.projects_controller
+components:
+  schemas:
+    Projects:
+      required:
+      - dueDate
+      - name
+      - startDate
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Project identifier assigned by application
+          format: int64
+          example: 10
+        name:
+          type: string
+          description: Project name
+          example: New project
+        description:
+          type: string
+          description: Project description
+          example: Project description
+          default: No description provided
+        startDate:
+          type: string
+          description: Project start date
+          format: date-time
+        dueDate:
+          type: string
+          description: Planned project finish date
+          format: date-time
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamMembers'
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tasks'
+      example:
+        dueDate: 2000-01-23T04:56:07.000+00:00
+        members:
+        - name: Steve
+          id: 10
+        - name: Steve
+          id: 10
+        name: New project
+        description: Project description
+        id: 10
+        startDate: 2000-01-23T04:56:07.000+00:00
+        tasks:
+        - comments:
+          - id: 10
+            content: This is a comment content
+          - id: 10
+            content: This is a comment content
+          dueDate: 2000-01-23T04:56:07.000+00:00
+          name: New task
+          description: Task description
+          id: 10
+          priority: medium
+          startDate: 2000-01-23T04:56:07.000+00:00
+        - comments:
+          - id: 10
+            content: This is a comment content
+          - id: 10
+            content: This is a comment content
+          dueDate: 2000-01-23T04:56:07.000+00:00
+          name: New task
+          description: Task description
+          id: 10
+          priority: medium
+          startDate: 2000-01-23T04:56:07.000+00:00
+    Tasks:
+      required:
+      - dueDate
+      - name
+      - startDate
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Task identifier assigned by application
+          format: int64
+          example: 10
+        name:
+          type: string
+          description: Task name
+          example: New task
+        description:
+          type: string
+          description: Task description
+          example: Task description
+          default: No description provided
+        startDate:
+          type: string
+          description: Task start date
+          format: date-time
+        dueDate:
+          type: string
+          description: Planned task finish date
+          format: date-time
+        priority:
+          type: string
+          description: Task priority
+          example: medium
+          default: medium
+          enum:
+          - low
+          - medium
+          - high
+          - critical
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Comments'
+      example:
+        comments:
+        - id: 10
+          content: This is a comment content
+        - id: 10
+          content: This is a comment content
+        dueDate: 2000-01-23T04:56:07.000+00:00
+        name: New task
+        description: Task description
+        id: 10
+        priority: medium
+        startDate: 2000-01-23T04:56:07.000+00:00
+    TeamMembers:
+      required:
+      - name
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Team member identifier assigned by application
+          format: int64
+          example: 10
+        name:
+          type: string
+          description: Team member name
+          example: Steve
+      example:
+        name: Steve
+        id: 10
+    Comments:
+      required:
+      - content
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Comment identifier assigned by application
+          format: int64
+          example: 10
+        content:
+          type: string
+          description: Comment
+          example: This is a comment content
+      example:
+        id: 10
+        content: This is a comment content
+
